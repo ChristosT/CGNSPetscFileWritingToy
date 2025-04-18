@@ -8,6 +8,7 @@ typedef struct {
   PetscInt  degree;
   PetscBool closure_tensor;
   PetscBool project_solution;
+  PetscReal time;
 } AppCtx;
 
 #define M_PI 3.1415926535897932384626433827950288
@@ -22,7 +23,7 @@ static PetscErrorCode project_function(PetscInt dim, PetscReal time, const Petsc
   for (PetscInt c = 0; c < Nc; c++) {
     PetscScalar value = sin(2.3 * M_PI * x_tot);
     if (PetscAbsScalar(value) < 100 * PETSC_MACHINE_EPSILON) value = 0.;
-    u[c] = value + c;
+    u[c] = value + c + time;
   }
   PetscFunctionReturn(PETSC_SUCCESS);
 }
@@ -38,6 +39,7 @@ static PetscErrorCode ProcessOptions(MPI_Comm comm, AppCtx *options)
   PetscCall(PetscOptionsInt("-degree", "Degree of FEM discretization", "ex49.c", options->degree, &options->degree, NULL));
   PetscCall(PetscOptionsBool("-closure_tensor", "Use DMPlexSetClosurePermutationTensor()", "ex49.c", options->closure_tensor, &options->closure_tensor, NULL));
   PetscCall(PetscOptionsBool("-project_solution", "Project solution onto mesh", "ex49.c", options->project_solution, &options->project_solution, NULL));
+  PetscCall(PetscOptionsReal("-time", "Simulation Time to incomporate into the file", "ex49.c", options->time, &options->time, NULL));
   PetscOptionsEnd();
   PetscFunctionReturn(PETSC_SUCCESS);
 }
@@ -95,8 +97,9 @@ int main(int argc, char **argv)
     if (user.project_solution) {
       PetscErrorCode (*funcs)(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nc, PetscScalar *u,
                               void *ctx) = {project_function};
-      PetscCall(DMProjectFunctionLocal(dm, 0, &funcs, NULL, INSERT_VALUES, vec));
+      PetscCall(DMProjectFunctionLocal(dm, user.time, &funcs, NULL, INSERT_VALUES, vec));
     }
+    PetscCall(DMSetOutputSequenceNumber(dm, 0, user.time));
     PetscCall(VecViewFromOptions(vec, NULL, "-vec_view"));
     PetscCall(VecDestroy(&vec));
   }
