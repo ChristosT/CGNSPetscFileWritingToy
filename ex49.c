@@ -22,7 +22,7 @@ static PetscErrorCode project_function(PetscInt dim, PetscReal time, const Petsc
   for (PetscInt c = 0; c < Nc; c++) {
     PetscScalar value = sin(2.3 * M_PI * x_tot);
     if (PetscAbsScalar(value) < 100 * PETSC_MACHINE_EPSILON) value = 0.;
-    u[c] = value;
+    u[c] = value + c;
   }
   PetscFunctionReturn(PETSC_SUCCESS);
 }
